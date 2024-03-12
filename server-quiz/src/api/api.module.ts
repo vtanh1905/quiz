@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 
-import { ExampleModule } from './example/example.module';
+import { QuizzesModule } from './quizzes/quizzes.module';
 import { MetaModule } from './meta/meta.module';
 
 @Module({
-  imports: [MetaModule, ExampleModule],
+  imports: [MetaModule, QuizzesModule],
 })
 export class ApiModule {}
