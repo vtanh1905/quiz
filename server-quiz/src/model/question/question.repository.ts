@@ -47,16 +47,14 @@ export class QuestionRepository extends BaseRepository<Question> {
       },
       {
         $addFields: {
-          type: { $cond: [
-            { $eq: [ { $size: '$correctAnswers' }, 1 ] }, TypeQuestion.Single, TypeQuestion.Multi
-          ] },
+          amountCorrectAnswer: { $size: '$correctAnswers' },
        },
       },
       {
         $project: {
           hint: 1,
           body: 1,
-          type: 1,
+          amountCorrectAnswer: 1,
           answers: {
             _id: 1,
             questionId: 1,

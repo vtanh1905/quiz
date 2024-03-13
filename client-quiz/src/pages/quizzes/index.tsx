@@ -1,28 +1,92 @@
-import { Inter } from "next/font/google";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import useSWR from "swr";
 
-const inter = Inter({ subsets: ["latin"] });
+import { axiosGet, axiosPost } from "../../utils";
 
 export default function Quizzes() {
+  const { data: quizzesResponse, isLoading: isQuizzesLoading } = useSWR(
+    "/api/quizzes/65ef1f601dca25128e3f471f",
+    axiosGet
+  );
+  const router = useRouter();
+
+  /* Declare states */
+  const [indexQuestion, setIndexQuestion] = useState(0);
   const [showHint, setShowHint] = useState(false);
+  const [showNotiPopup, setShowNotiPopup] = useState(false);
+  const [showBackPopup, setShowBackPopup] = useState(false);
+  const [chosenAnswers, setChosenAnswers] = useState<any>({});
 
-  const question = "What is the capital of France?";
-  const answers = ["Paris", "London", "Berlin", "Rome"];
-  const hint = "The city is known for the Eiffel Tower.";
+  // Make sure the data was loaded
+  if (isQuizzesLoading) {
+    return <></>;
+  }
+  const percentProcessBar = (indexQuestion / quizzesResponse.data.length) * 100;
+  const {
+    body: question,
+    answers,
+    hint,
+    amountCorrectAnswer,
+  } = quizzesResponse.data[indexQuestion];
 
-  const handleAnswerClick = (answer: any) => {
-    // Handle answer click logic here
-    console.log(`Selected answer: ${answer}`);
+  const handleAnswerClick = async (answer: any) => {
+    const { _id: answerId } = answer;
+
+    // The answer used to be clicked
+    if (chosenAnswers[answerId] === false) {
+      return;
+    }
+
+    // Call API to check whether the answer is correct
+    const {
+      data: { isCorrect },
+    } = await axiosPost(`/api/answers/${answerId}`);
+
+    const newChosenAnswers = {
+      ...chosenAnswers,
+      [answerId]: isCorrect,
+    };
+    setChosenAnswers(newChosenAnswers);
+
+    // Count a amount of correct answers that is clicked
+    const countClickedCorrectAnswers = Object.values(newChosenAnswers).filter((value) => value).length;
+    
+    // Handle Correct Answer
+    if (isCorrect && countClickedCorrectAnswers === amountCorrectAnswer) {
+      setShowNotiPopup(true);
+      return;
+    }
   };
 
   const handleToggleHint = () => {
     setShowHint(!showHint);
   };
 
-  const handleGoBack = () => {};
-  const showPopup = true;
-  const showBackPopup = true;
+  const handleNotiPopupNextButton = async () => {
+    const nextIndexQuestion = indexQuestion + 1;
+
+    // Handle Next Question
+    if (nextIndexQuestion === quizzesResponse.data.length) {
+      await router.push("/quizzes/done");
+    }
+    setIndexQuestion(nextIndexQuestion);
+    setShowNotiPopup(false);
+    setChosenAnswers({});
+  };
+
+  const handleGoBack = () => {
+    setShowBackPopup(true);
+  };
+
+  const handleGoBackCancelButton = () => {
+    setShowBackPopup(false);
+  };
+
+  const handleGoBackEndQuizButton = () => {
+    router.push("/");
+  };
+
   return (
     <>
       {/* Back Arrow */}
@@ -49,26 +113,36 @@ export default function Quizzes() {
       <div className="w-full bg-gray-200 rounded-full dark:bg-gray-700 mb-4">
         <div
           className="bg-blue-600 text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-full"
-          style={{ width: "25%" }}
+          style={{ width: `${percentProcessBar}%` }}
         >
-          25%
+          {percentProcessBar}%
         </div>
       </div>
 
       {/* Question title */}
-      <h1 className="text-2xl font-bold mb-4">{question}</h1>
+      <h1 className="text-2xl font-bold mb-4">
+        {question} ?{" "}
+        {amountCorrectAnswer > 1
+          ? `Please choose ${amountCorrectAnswer} answers`
+          : ""}
+      </h1>
 
       {/* Answers */}
       <div className="mt-4">
-        {answers.map((answer, index) => (
+        {answers.map((answer: any, index: number) => (
           <div key={index} className="mb-2">
             <button
               className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-left"
               onClick={() => handleAnswerClick(answer)}
             >
-              {answer}
+              {answer.body}
             </button>
-            {/* <div className="mt-2 text-red-500">Please try again!</div> */}
+            {chosenAnswers[answer._id] === false && (
+              <div className="mt-2 text-red-500">Please try again!</div>
+            )}
+            {chosenAnswers[answer._id] === true && (
+              <div className="mt-2 text-green-500">Correct</div>
+            )}
           </div>
         ))}
       </div>
@@ -97,22 +171,20 @@ export default function Quizzes() {
         </div>
         {showHint && (
           <div className="mt-2">
-            <p className="text-sm italic">
-              The city is known for the Eiffel Tower.
-            </p>
+            <p className="text-sm italic">{hint}</p>
           </div>
         )}
       </div>
 
-      {/* Popup */}
-      {showPopup && (
+      {/* Notification Popup */}
+      {showNotiPopup && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-8 text-center">
             <h2 className="text-2xl font-bold mb-4">Congratulations!</h2>
             <p className="text-lg">Your answer is correct! Well done!</p>
             <button
               className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded mt-4"
-              // onClick={() => setShowPopup(false)}
+              onClick={handleNotiPopupNextButton}
             >
               Next
             </button>
@@ -120,21 +192,26 @@ export default function Quizzes() {
         </div>
       )}
 
-      {/* Popup */}
+      {/* Go Back Popup */}
       {showBackPopup && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Do you want to end quiz?</h2>
-            <p className="text-lg">Once you end this quiz, you will have to start from the first question again.</p>
+            <h2 className="text-2xl font-bold mb-4">
+              Do you want to end quiz?
+            </h2>
+            <p className="text-lg">
+              Once you end this quiz, you will have to start from the first
+              question again.
+            </p>
             <button
               className="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded mt-4 mr-4"
-              // onClick={() => setShowPopup(false)}
+              onClick={handleGoBackCancelButton}
             >
               Cancel
             </button>
             <button
               className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded mt-4"
-              // onClick={() => setShowPopup(false)}
+              onClick={handleGoBackEndQuizButton}
             >
               End Quiz
             </button>

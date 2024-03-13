@@ -15,6 +15,9 @@ async function bootstrap() {
   // Compression
   app.use(compression());
 
+  // Enable Cors
+  app.enableCors();
+
   // Global Prefix Controller
   app.setGlobalPrefix('api', {
     exclude: [{ path: 'meta/(.*)', method: RequestMethod.GET }],
