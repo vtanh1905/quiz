@@ -13,4 +13,8 @@ export class RegisterDto {
   @ApiProperty()
   @Length(6, 30)
   fullName: string
+
+  @ApiProperty()
+  @IsNotEmpty()
+  otp: string
 }

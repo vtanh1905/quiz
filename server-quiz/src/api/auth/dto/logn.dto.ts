@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsMobilePhone, Length } from 'class-validator'
+import { IsMobilePhone, Length, IsNotEmpty } from 'class-validator'
 
 export class LoginDto {
   @ApiProperty()
@@ -9,4 +9,8 @@ export class LoginDto {
   @ApiProperty()
   @Length(6, 15)
   password: string
+
+  @ApiProperty()
+  @IsNotEmpty()
+  otp: string
 }
