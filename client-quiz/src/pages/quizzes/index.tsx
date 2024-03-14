@@ -3,8 +3,10 @@ import { useState } from "react";
 import useSWR from "swr";
 
 import { axiosGet, axiosPost } from "../../utils";
+import { useAuth } from "../../hooks";
 
 export default function Quizzes() {
+  const {} = useAuth(true, "/login");
   const { data: quizzesResponse, isLoading: isQuizzesLoading } = useSWR(
     "/api/quizzes/65ef1f601dca25128e3f471f",
     axiosGet
@@ -50,8 +52,10 @@ export default function Quizzes() {
     setChosenAnswers(newChosenAnswers);
 
     // Count a amount of correct answers that is clicked
-    const countClickedCorrectAnswers = Object.values(newChosenAnswers).filter((value) => value).length;
-    
+    const countClickedCorrectAnswers = Object.values(newChosenAnswers).filter(
+      (value) => value
+    ).length;
+
     // Handle Correct Answer
     if (isCorrect && countClickedCorrectAnswers === amountCorrectAnswer) {
       setShowNotiPopup(true);

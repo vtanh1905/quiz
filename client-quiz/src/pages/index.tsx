@@ -12,7 +12,7 @@ export default function Home() {
   const handleStartQuiz = () => {
     // Handle start quiz button click
     console.log("Quiz started!");
-    router.push("/quizzes");
+    router.push("/login");
   };
 
   return (

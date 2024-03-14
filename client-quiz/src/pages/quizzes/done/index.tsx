@@ -3,10 +3,12 @@ import { Inter } from "next/font/google";
 import { useRouter } from "next/router";
 
 import quizImage from "../../../../public/congratulations.jpg";
+import { useAuth } from "../../../hooks";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export default function QuizzesDone() {
+  const {} = useAuth(true, "/login");
   const router = useRouter();
 
   const startQuiz = () => {
