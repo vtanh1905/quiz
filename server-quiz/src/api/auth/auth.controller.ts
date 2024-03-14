@@ -2,15 +2,27 @@ import { Body, Controller, Post, Request } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
 import { AuthService } from './auth.service'
-import { LoginDto } from './dto/logn.dto'
+import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
 import { Auth } from '../../common/decorators'
 import { SendOtpDto } from './dto/sendOtp.dto'
+import { ValidateDto } from './dto/validate.dto'
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) { }
+
+  @Post('/validate')
+  async validate(@Body() validateDto: ValidateDto): Promise<any> {
+    const { mobilePhone, password } = validateDto;
+
+    await this.authService.validate(mobilePhone, password);
+    
+    return {
+      message: 'Successfully'
+    };
+  }
 
   @Post('/login')
   async login(@Body() loginDto: LoginDto): Promise<any> {

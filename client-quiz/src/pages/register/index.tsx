@@ -2,11 +2,23 @@ import { useAuth } from "../../hooks";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
+
+interface IFormInput {
+  fullName: string;
+  mobilePhone: string;
+  password: string;
+}
 
 export default function Register() {
-  const { onRegister } = useAuth(false, "/quizzes");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    getValues,
+  } = useForm<IFormInput>();
+  const { onRegister, onSendOtp } = useAuth(false, "/quizzes");
   const router = useRouter();
-  const [registerForm, setRegisterForm] = useState({ mobilePhone: "", password: "", fullName: "" });
   const [otpCode, setOtpCode] = useState("");
   const [showOtpPopup, setShowOtpPopup] = useState(false);
 
@@ -14,19 +26,15 @@ export default function Register() {
     router.push("/");
   };
 
-  const handleInputChange = (e: any) => {
-    const { name, value } = e.target;
-    setRegisterForm({ ...registerForm, [name]: value });
-  };
-
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
+  const onSubmit: SubmitHandler<IFormInput> = async (data) => {
     try {
-      await onRegister(registerForm.mobilePhone, registerForm.password, registerForm.fullName);
-      alert('Register Successfully!')
-      router.push("/login");
+      const { mobilePhone } = data;
+      setShowOtpPopup(true);
+      await onSendOtp(mobilePhone);
     } catch (error: any) {
-      alert(error.response?.data?.message ?? 'Please double-check your information!');
+      alert(
+        error.response?.data?.message ?? "Please double-check your information!"
+      );
     }
   };
 
@@ -34,8 +42,17 @@ export default function Register() {
     setShowOtpPopup(false);
   };
 
-  const handleOTPPopupSubmitButton = (e: any) => {
-    console.log(otpCode);
+  const handleOTPPopupSubmitButton = async () => {
+    try {
+      const { fullName, mobilePhone, password } = getValues();
+      await onRegister(mobilePhone, password, fullName, otpCode);
+      alert("Register Successfully!");
+      router.push("/login");
+    } catch (error: any) {
+      alert(
+        error.response?.data?.message ?? "Please double-check your information!"
+      );
+    }
   };
 
   return (
@@ -62,7 +79,7 @@ export default function Register() {
 
       {/* Form Register */}
       <div className="text-center font-semibold text-2xl mb-6">Register</div>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <div className="mb-4">
           <label
             htmlFor="fullName"
@@ -71,13 +88,18 @@ export default function Register() {
             Full Name
           </label>
           <input
-            type="tel"
-            name="fullName"
-            id="fullName"
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            value={registerForm.fullName}
-            onChange={handleInputChange}
+            {...register("fullName", {
+              required: true,
+              minLength: 6,
+              maxLength: 15,
+            })}
           />
+          {errors.fullName && (
+            <span className="text-red-500">
+              Please enter your fullName between 6 and 15 characters.
+            </span>
+          )}
         </div>
         <div className="mb-4">
           <label
@@ -87,13 +109,17 @@ export default function Register() {
             Mobile Phone
           </label>
           <input
-            type="tel"
-            name="mobilePhone"
-            id="mobilePhone"
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            value={registerForm.mobilePhone}
-            onChange={handleInputChange}
+            {...register("mobilePhone", {
+              required: true,
+              pattern: /(03|05|07|08|09|01[2|6|8|9])+([0-9]{8})\b/,
+            })}
           />
+          {errors.mobilePhone && (
+            <span className="text-red-500">
+              Please enter your valid mobile phone number.
+            </span>
+          )}
         </div>
         <div className="mb-6">
           <label
@@ -104,12 +130,18 @@ export default function Register() {
           </label>
           <input
             type="password"
-            name="password"
-            id="password"
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            value={registerForm.password}
-            onChange={handleInputChange}
+            {...register("password", {
+              required: true,
+              minLength: 6,
+              maxLength: 15,
+            })}
           />
+          {errors.password && (
+            <span className="text-red-500">
+              Please enter your password between 6 and 15 characters.
+            </span>
+          )}
         </div>
         <div className="flex items-center justify-between">
           <button

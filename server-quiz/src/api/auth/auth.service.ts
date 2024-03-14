@@ -20,6 +20,15 @@ export class AuthService {
     this.twilioClient = twilio(this.configService.get('TWILIO_ACCOUNT_SID'), this.configService.get('TWILIO_AUTH_TOKEN'))
   }
 
+  async validate(mobilePhone: string, password: string) {
+    const user = await this.userRepository.findOne({ mobilePhone });
+
+    // Validate Username exists and Password is correct
+    if (!user || !bcrypt.compareSync(password, user.password)) {
+      throw new UnauthorizedException({ message: 'Username or Password is not correct!' })
+    }
+  }
+
   async login(mobilePhone: string, password: string, otp: string): Promise<any> {
     const user = await this.userRepository.findOne({ mobilePhone });
 

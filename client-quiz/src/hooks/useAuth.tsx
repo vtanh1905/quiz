@@ -11,10 +11,11 @@ export const useAuth = (isAuth: any = null, redirectTo: string = '/') => {
     revalidateOnFocus: false,
   });
 
-  const onLogin = async (mobilePhone: string, password: string) => {
+  const onLogin = async (mobilePhone: string, password: string, otp: string) => {
     const response = await axiosPost("/api/auth/login", {
       mobilePhone,
       password,
+      otp,
     });
     // Save Cookie
     setCookie("access-token", response.data?.accessToken);
@@ -31,12 +32,34 @@ export const useAuth = (isAuth: any = null, redirectTo: string = '/') => {
   const onRegister = async (
     mobilePhone: string,
     password: string,
-    fullName: string
+    fullName: string,
+    otp: string,
   ) => {
     const response = await axiosPost("/api/auth/register", {
       mobilePhone,
       password,
       fullName,
+      otp,
+    });
+    return response;
+  };
+
+  const onSendOtp = async (
+    mobilePhone: string
+  ) => {
+    const response = await axiosPost("/api/auth/send-otp", {
+      mobilePhone,
+    });
+    return response;
+  };
+
+  const onValidate = async (
+    mobilePhone: string,
+    password: string,
+  ) => {
+    const response = await axiosPost("/api/auth/validate", {
+      mobilePhone,
+      password,
     });
     return response;
   };
@@ -51,5 +74,5 @@ export const useAuth = (isAuth: any = null, redirectTo: string = '/') => {
     }
   }, [data]);
 
-  return { user: data, isLoading, mutate, onLogin, onLogout, onRegister };
+  return { user: data, isLoading, mutate, onLogin, onLogout, onRegister, onSendOtp, onValidate };
 };

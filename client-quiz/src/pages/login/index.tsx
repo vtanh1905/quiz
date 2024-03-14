@@ -2,11 +2,22 @@ import { useAuth } from "../../hooks";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
+
+interface IFormInput {
+  mobilePhone: string;
+  password: string;
+}
 
 export default function Login() {
-  const { onLogin } = useAuth(false, '/quizzes');
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    getValues,
+  } = useForm<IFormInput>();
+  const { onLogin, onSendOtp, onValidate } = useAuth(false, "/quizzes");
   const router = useRouter();
-  const [loginForm, setLoginForm] = useState({ mobilePhone: "", password: "" });
   const [otpCode, setOtpCode] = useState("");
   const [showOtpPopup, setShowOtpPopup] = useState(false);
 
@@ -14,17 +25,17 @@ export default function Login() {
     router.push("/");
   };
 
-  const handleInputChange = (e: any) => {
-    const { name, value } = e.target;
-    setLoginForm({ ...loginForm, [name]: value });
-  };
-
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
+  const onSubmit: SubmitHandler<IFormInput> = async (data) => {
     try {
-        await onLogin(loginForm.mobilePhone, loginForm.password);
+      const { mobilePhone, password } = data;
+      await onValidate(mobilePhone, password);
+
+      setShowOtpPopup(true);
+      await onSendOtp(mobilePhone);
     } catch (error: any) {
-        alert(error.response?.data?.message ?? 'Please double-check your information!');
+      alert(
+        error.response?.data?.message ?? "Please double-check your information!"
+      );
     }
   };
 
@@ -32,8 +43,16 @@ export default function Login() {
     setShowOtpPopup(false);
   };
 
-  const handleOTPPopupSubmitButton = (e: any) => {
-    console.log(otpCode);
+  const handleOTPPopupSubmitButton = async (e: any) => {
+    try {
+      const { mobilePhone, password } = getValues();
+      await onLogin(mobilePhone, password, otpCode);
+      alert("Login Successfully!");
+    } catch (error: any) {
+      alert(
+        error.response?.data?.message ?? "Please double-check your information!"
+      );
+    }
   };
 
   return (
@@ -60,7 +79,7 @@ export default function Login() {
 
       {/* Form Login */}
       <div className="text-center font-semibold text-2xl mb-6">Login</div>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <div className="mb-4">
           <label
             htmlFor="mobilePhone"
@@ -69,13 +88,17 @@ export default function Login() {
             Mobile Phone
           </label>
           <input
-            type="tel"
-            name="mobilePhone"
-            id="mobilePhone"
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            value={loginForm.mobilePhone}
-            onChange={handleInputChange}
+            {...register("mobilePhone", {
+              required: true,
+              pattern: /(03|05|07|08|09|01[2|6|8|9])+([0-9]{8})\b/,
+            })}
           />
+          {errors.mobilePhone && (
+            <span className="text-red-500">
+              Please enter your valid mobile phone number.
+            </span>
+          )}
         </div>
         <div className="mb-6">
           <label
@@ -86,12 +109,18 @@ export default function Login() {
           </label>
           <input
             type="password"
-            name="password"
-            id="password"
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            value={loginForm.password}
-            onChange={handleInputChange}
+            {...register("password", {
+              required: true,
+              minLength: 6,
+              maxLength: 15,
+            })}
           />
+          {errors.password && (
+            <span className="text-red-500">
+              Please enter your password between 6 and 15 characters.
+            </span>
+          )}
         </div>
         <div className="flex items-center justify-between">
           <button
