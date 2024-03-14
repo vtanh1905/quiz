@@ -10,3 +10,26 @@ services:
       - 27017:27017
     volumes:
       - ./data/mongodb:/data/db
+  
+  server-quiz:
+    image: server-quiz
+    build:
+      context: ./server-quiz
+      dockerfile: Dockerfile
+    container_name: server-quiz
+    env_file: ./server-quiz/.env
+    ports:
+      - 4000:4000
+    depends_on:
+      - mongodb
+
+  client-quiz:
+    image: client-quiz
+    build:
+      context: ./client-quiz
+      dockerfile: Dockerfile
+    container_name: client-quiz
+    ports:
+      - 80:3000
+    depends_on:
+      - server-quiz
